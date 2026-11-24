@@ -18,6 +18,7 @@ services:
       - pgdata:/var/lib/postgresql
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/10-youbike.sql:ro
       - ./postgres/peak-history.sql:/docker-entrypoint-initdb.d/20-peak-history.sql:ro
+      - ./postgres/official-monthly.sql:/docker-entrypoint-initdb.d/30-official-monthly.sql:ro
 
   collector:
     build: .
@@ -51,7 +52,9 @@ services:
       - "127.0.0.1:${YOUBIKE_GRAFANA_PORT:-5088}:3000"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/dashboards/station-overview.json:/var/lib/grafana/dashboards/station-overview.json:ro
+      - ./grafana/dashboards/peak-history.json:/var/lib/grafana/dashboards/peak-history.json:ro
+      - ./grafana/official-monthly.json:/var/lib/grafana/dashboards/official-monthly.json:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
       interval: 3s

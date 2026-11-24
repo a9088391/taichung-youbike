@@ -1,0 +1,634 @@
+{
+  "uid": "taichung-youbike-monthly",
+  "title": "臺中 YouBike 官方全市租借月報",
+  "description": "以官方發布的全市租借月報看見臺中的騎乘脈動；缺月斷線，來源、期間與原始資料可逐月核對。",
+  "schemaVersion": 41,
+  "version": 2,
+  "timezone": "Asia/Taipei",
+  "editable": false,
+  "refresh": "1m",
+  "timepicker": {
+    "hidden": true
+  },
+  "links": [
+    {
+      "title": "站點總覽",
+      "url": "/d/taichung-youbike/taichung-youbike",
+      "type": "link",
+      "targetBlank": false
+    },
+    {
+      "title": "早晚尖峰與單站歷史",
+      "url": "/d/taichung-youbike-peaks/taichung-youbike",
+      "type": "link",
+      "targetBlank": false
+    }
+  ],
+  "panels": [
+    {
+      "id": 10,
+      "type": "text",
+      "title": "",
+      "transparent": true,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 3
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "# 看見臺中的騎乘脈動\n官方全市租借月報 · 每個圓點，都是市府已發布的一個月。缺月保留空白，不補零、不跨月推估。"
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "最新官方月份",
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 5,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT to_char(max(month), 'YYYY-MM') AS \"最新月份\" FROM official_monthly_rentals"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73C9D8"
+          },
+          "decimals": 0,
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^最新月份$/",
+          "values": true,
+          "limit": 1
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": false,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "當月租借車次 · 車次",
+      "gridPos": {
+        "x": 5,
+        "y": 3,
+        "w": 7,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT rentals AS \"租借車次\" FROM official_monthly_rentals ORDER BY month DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#32D5C5"
+          },
+          "decimals": 0,
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false,
+          "limit": 1
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": false,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "已發布月份 · 月",
+      "gridPos": {
+        "x": 12,
+        "y": 3,
+        "w": 5,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(*) AS \"已發布月份\" FROM official_monthly_rentals"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73C9D8"
+          },
+          "decimals": 0,
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false,
+          "limit": 1
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": false,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "官方快照涵蓋期間",
+      "gridPos": {
+        "x": 17,
+        "y": 3,
+        "w": 7,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT to_char(min(month), 'YYYY-MM') || '–' || to_char(max(month), 'YYYY-MM') AS \"涵蓋期間\" FROM official_monthly_rentals"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "decimals": 0,
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^涵蓋期間$/",
+          "values": true,
+          "limit": 1
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": false,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "type": "xychart",
+      "title": "城市騎乘趨勢 · 每月租借車次",
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 24,
+        "h": 12
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH sequenced AS (\n    SELECT month, rentals,\n           extract(year FROM month)::integer * 12 + extract(month FROM month)::integer\n             - row_number() OVER (ORDER BY month) AS segment\n    FROM official_monthly_rentals\n)\nSELECT month::timestamp AT TIME ZONE 'Asia/Taipei' AS time,\n       rentals AS \"租借車次\",\n       to_char(min(month) OVER (PARTITION BY segment), 'YYYY-MM') || '起連續月份' AS \"連續月份段\"\nFROM sequenced\nORDER BY month"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "locale",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#32D5C5"
+          },
+          "custom": {
+            "show": "points+lines",
+            "pointShape": "circle",
+            "pointSize": {
+              "fixed": 7
+            },
+            "pointStrokeWidth": 2,
+            "fillOpacity": 90,
+            "lineWidth": 2,
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "axisLabel": "租借車次（車次）",
+            "axisPlacement": "left",
+            "axisGridShow": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "官方月份（臺灣時間）"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "bottom"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "租借車次"
+            },
+            "properties": [
+              {
+                "id": "min",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "auto",
+        "series": [
+          {
+            "x": {
+              "matcher": {
+                "id": "byName",
+                "options": "time"
+              }
+            },
+            "y": {
+              "matcher": {
+                "id": "byName",
+                "options": "租借車次"
+              }
+            }
+          }
+        ],
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "maxWidth": 420
+        }
+      },
+      "description": "圓點為官方租借車次；2025-10與2026-01在本次資料集未列資源，各連續月份分段呈現。滑過圓點可查看精確值。",
+      "transformations": [
+        {
+          "id": "partitionByValues",
+          "options": {
+            "fields": [
+              "連續月份段"
+            ],
+            "keepFields": false
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "type": "text",
+      "title": "官方全市月報來源",
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 6
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "[臺中市政府交通局租賃月報 · 資料集88614](https://data.gov.tw/dataset/88614)\n\n僅取「臺中市／月／公共自行租賃情形－租借車次」，單位：車次。依政府資料開放授權條款第1版使用。\n\n本頁是隨專案附帶的官方已發布月份快照，不會自動下載新月報。缺月以「未發布（本次核對未列）」標示，不補零、不推估；下表可連至每月原始JSON。"
+      }
+    },
+    {
+      "id": 2,
+      "type": "text",
+      "title": "本機站點觀測來源",
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 6
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "[臺中市政府 YouBike站況 · 資料集136781](https://data.gov.tw/dataset/136781)\n\n單站歷史從本機首次成功採集開始累積；觀測期間見下方。站點車數與空位觀測不等於實際租借車次，也不用來推算官方月報。\n\n[站點總覽](/d/taichung-youbike/taichung-youbike) · [早晚尖峰與單站歷史](/d/taichung-youbike-peaks/taichung-youbike)"
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "官方快照核對日期",
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 6,
+        "h": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT to_char(max(verified_on), 'YYYY-MM-DD') AS \"核對日期\" FROM official_monthly_rentals"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "decimals": 0,
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^核對日期$/",
+          "values": true,
+          "limit": 1
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": false,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "本機站點來源時間涵蓋期間（臺灣時間）",
+      "gridPos": {
+        "x": 6,
+        "y": 25,
+        "w": 18,
+        "h": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT CASE WHEN count(*) = 0 THEN '尚無站點觀測；從首次成功採集開始累積'\n       ELSE to_char(min(source_at) AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS')\n         || '–' || to_char(max(source_at) AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS') END AS \"觀測期間\"\nFROM station_history"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^觀測期間$/",
+          "values": true,
+          "limit": 10
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": false,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "月份明細與官方原始資料",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 13
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "WITH months AS (\n    SELECT generate_series(min(month)::timestamp, max(month)::timestamp, interval '1 month')::date AS month\n    FROM official_monthly_rentals\n)\nSELECT to_char(months.month, 'YYYY-MM') AS \"月份\", report.rentals AS \"租借車次\",\n       CASE WHEN report.month IS NULL THEN '未發布（本次核對未列）' ELSE '已發布' END AS \"發布狀態\",\n       report.source_url AS \"官方原始JSON\"\nFROM months LEFT JOIN official_monthly_rentals AS report USING (month)\nORDER BY months.month"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "未發布",
+          "unit": "locale"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "官方原始JSON"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "開啟市府原始JSON",
+                    "url": "${__value.raw}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "租借車次"
+            },
+            "properties": [
+              {
+                "id": "custom.align",
+                "value": "right"
+              },
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "月份"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "發布狀態"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 250
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    }
+  ]
+}

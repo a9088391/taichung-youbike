@@ -115,3 +115,64 @@ docker compose --env-file .env -p "$ticket02_project" run --rm --no-deps -T \
 | 總覽與尖峰歷史 | 實際操作連結來回切換，確認兩個方向都開啟正確儀表板。 |
 
 完整狀態需包含當次選擇及完成更新後的面板內容。保留原始檔供 Spec／Review 獨立讀取；只在驗收記錄中摘要各項結果。
+
+## 官方全市租借月度趨勢
+
+開啟[官方全市租借月報](http://127.0.0.1:5088/d/taichung-youbike-monthly/taichung-youbike)，也可用 Grafana 搜尋「臺中 YouBike 官方全市租借月報」。頁首先呈現最新官方月份、當月租借車次、已發布月數及涵蓋期間，主圖以青藍色圓點折線呈現月度趨勢；下方保留來源、核對日期、本機觀測期間與官方明細。月報頁可前往站點總覽及尖峰歷史。新 volume 首次啟動即載入快照，不需等待站點採集；既有 volume 請先依下節升級。
+
+月報使用[臺中市政府交通局租賃月報（資料集88614）](https://data.gov.tw/dataset/88614)，依政府資料開放授權條款第1版使用。只取「臺中市／月／公共自行租賃情形－租借車次」，月份依原始「資料時間日期」判定，單位為車次。本版於2026-11-24核對：2025-02至2026-09，共18個已發布月份；2025-10、2026-01在本次資料集入口未列資源，圖表保留缺月、明細標示「未發布（本次核對未列）」，不補零或推估。2026-09為2,091,631車次。
+
+這是隨專案附帶、由管理者載入的官方快照，不會自動下載新月報。`postgres/official-monthly.sql` 每月保留原始JSON網址、原始檔SHA256及核對日期，明細可開啟每月原始資料。主圖使用原生XY時間軸，顯示整份快照，不受 Grafana 最近14天等日期範圍隱藏。只有官方已發布月份會畫圓點；依實際月份動態分成連續區段，各區段獨立連線，缺月不補零、不跨段連線。滑過圓點可看精確租借車次，完整明細仍保留兩個缺月的NULL與未發布標示。
+
+月報與[站況資料集136781](https://data.gov.tw/dataset/136781)各自標示來源及期間。站點來源時間以臺灣時間顯示，從本機首次成功採集開始累積；尚無觀測時明確提示。站點觀測數、車數或空位皆不等於實際租借車次，不用來推算官方月報。
+
+### 已有 volume 的月報升級與復原限制
+
+既有 volume 不重跑初始化。先保留原 volume、私有 `.env` 及既有資料庫備份；第01版 volume 也須先完成上方 `peak-history.sql` 升級，讓月報頁可讀取站點觀測期間。再於原專案目錄明確執行：
+
+```sh
+./bin/local exec -T db psql -v ON_ERROR_STOP=1 -U youbike_admin -d youbike < postgres/official-monthly.sql
+./bin/local up -d --build --wait
+```
+
+本 SQL 在同一筆交易中新增月報表、載入快照及授予 reader 的 SELECT；同月份以主鍵更新，可重跑，不更動站點觀測、尖峰檢視或採集狀態，collector沒有月報寫入權限。失敗時整筆交易回滾，`ON_ERROR_STOP` 會回報失敗。成功載入會更新相同月份的快照；日後若要復原已成功更新的月報值，須使用先前備份或先前核對的快照重新載入，退回程式碼不會自動回復資料。退回舊版程式可保留新增表，不需刪表或 volume。
+
+Grafana 的三張 JSON 各自以唯讀單檔掛載，由既有 provisioning 掃描同一目錄；如此可在更新服務時加入月報，而不修改兩張既有儀表板的內容。修改 Compose 不會自動套用到已運行的服務；5088展示與5092舊驗證仍需另行明確升級，不應從本票的隔離測試推論已部署。
+
+### 第03張隔離驗證
+
+使用專用 project `taichung-youbike-ticket03-check`、Grafana連接埠5093與其獨立 `pgdata`。不得重用5088／5092、刪除 volume 取得乾淨狀態或繞過 guard。先確認私有 `.env` 存在，僅在缺少時執行 `./bin/local config --quiet`；下列命令不啟動週期採集器：
+
+```sh
+ticket03_project=taichung-youbike-ticket03-check
+set -a
+. ./.env
+set +a
+export YOUBIKE_GRAFANA_PORT=5093
+docker compose --env-file .env -p "$ticket03_project" up -d --wait db grafana
+docker compose --env-file .env -p "$ticket03_project" ps
+docker compose --env-file .env -p "$ticket03_project" port grafana 3000
+docker volume ls --filter "label=com.docker.compose.project=$ticket03_project"
+```
+
+確認專案的 `db`／`grafana`、同標籤volume及 `127.0.0.1:5093`；第一個測試寫入前亦須確認本次來源版本、測試image及空站點狀態，才設定專屬標記。月報整合程式會在任何測試寫入前核對標記、資料庫名稱、current/session actor及站號；僅允許空站點或第02張定義的受控 `T02-*` 測資。
+
+```sh
+docker compose --env-file .env -p "$ticket03_project" exec -T db \
+  psql -v ON_ERROR_STOP=1 -U youbike_admin -d youbike \
+  -c "COMMENT ON DATABASE youbike IS 'ticket03-check disposable verification';"
+docker compose --env-file .env -p "$ticket03_project" build collector
+docker compose --env-file .env -p "$ticket03_project" run --rm --no-deps -T \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/grafana:/app/grafana:ro" \
+  -v "$PWD/postgres:/app/postgres:ro" \
+  collector python -B -m unittest discover -s tests -v
+docker compose --env-file .env -p "$ticket03_project" run --rm --no-deps -T \
+  -e TICKET03_DISPOSABLE=ticket03-check -e YOUBIKE_READER_PASSWORD -e YOUBIKE_ADMIN_PASSWORD \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/grafana:/app/grafana:ro" \
+  -v "$PWD/postgres:/app/postgres:ro" \
+  collector python -B tests/integration_official_monthly.py --admin
+```
+
+不加 `--admin` 時只跑 reader 面板SQL、月份／缺月／官方抽查值、來源期間與reader／collector寫入拒絕；加上該參數才以明確admin actor執行實際seed兩次、同腳本失敗副本回滾、月初／非負約束與站點／採集狀態不變檢查。此測試不輸出憑證，也不新增站點資料。
+
+Grafana實際驗收仍遵循上方完整原始DOM／AX及截圖程序，改用5093並保存在 `../.scratch/taichung-youbike/review/03/`：首次0站點歷史可見四張KPI與18個官方月份圓點、2026-09數值與hover精確值；兩個缺月前後斷線，明細仍保留缺月與未發布標示；各自來源／涵蓋期間，以及月報前往原有兩頁的連結與其無資料行為。亦以既有最近6小時URL日期範圍重新開啟，確認主圖仍呈現整份月報。SQL／metadata通過不能代替畫面驗收。
