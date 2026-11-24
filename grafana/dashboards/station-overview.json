@@ -1,0 +1,528 @@
+{
+  "uid": "taichung-youbike",
+  "title": "臺中 YouBike 站點供需",
+  "description": "查看臺中市 YouBike 站點的最後成功快照及採集狀態。",
+  "schemaVersion": 41,
+  "version": 1,
+  "timezone": "Asia/Taipei",
+  "editable": false,
+  "graphTooltip": 0,
+  "refresh": "1m",
+  "timepicker": {
+    "hidden": true
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "全市站點",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(*) AS \"站點數\" FROM current_stations"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": true,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "涵蓋行政區",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(DISTINCT district) AS \"行政區數\" FROM current_stations"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": true,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "採集狀態",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT CASE\n    WHEN error_kind = 'fetch' THEN '抓取失敗'\n    WHEN error_kind = 'invalid-data' THEN '資料驗證失敗'\n    WHEN error_kind = 'storage' THEN '儲存失敗'\n    WHEN last_success_at IS NULL THEN '尚未採集'\n    ELSE '採集成功'\nEND AS \"採集狀態\"\nFROM collection_status"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "採集成功": {
+                  "text": "採集成功",
+                  "color": "green",
+                  "index": 0
+                },
+                "抓取失敗": {
+                  "text": "抓取失敗",
+                  "color": "red",
+                  "index": 1
+                },
+                "資料驗證失敗": {
+                  "text": "資料驗證失敗",
+                  "color": "red",
+                  "index": 2
+                },
+                "儲存失敗": {
+                  "text": "儲存失敗",
+                  "color": "red",
+                  "index": 3
+                },
+                "尚未採集": {
+                  "text": "尚未採集",
+                  "color": "gray",
+                  "index": 4
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^採集狀態$/",
+          "values": true,
+          "limit": 1
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": true,
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "最後成功採集",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT coalesce(\n    to_char(last_success_at AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS'),\n    '尚無資料'\n) AS \"最後成功採集\"\nFROM collection_status"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^最後成功採集$/",
+          "values": true,
+          "limit": 1
+        },
+        "orientation": "horizontal",
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "value",
+        "wideLayout": true,
+        "justifyMode": "center",
+        "text": {
+          "valueSize": 17
+        }
+      },
+      "description": "這是採集程式最後一次成功取得並保存快照的時間，時區為臺灣時間。各站的來源時間可在下方明細查核。"
+    },
+    {
+      "id": 5,
+      "type": "geomap",
+      "title": "站點地圖",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 16,
+        "h": 14
+      },
+      "description": "顯示最後成功快照的站點。指向站點可查看來源時間、可借車數和可還空位。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT latitude, longitude, station_name AS \"站點\",\n       district AS \"行政區\",\n       available_bikes AS \"可借車數\",\n       available_docks AS \"可還空位\",\n       to_char(source_at AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS') AS \"來源時間\",\n       CASE WHEN is_active THEN '營運中' ELSE '停用' END AS \"來源營運狀態\" \nFROM current_stations"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 24.245,
+          "lon": 120.82,
+          "zoom": 9.9
+        },
+        "basemap": {
+          "type": "default",
+          "name": "底圖"
+        },
+        "controls": {
+          "showZoom": true,
+          "showAttribution": true,
+          "showScale": true
+        },
+        "tooltip": {
+          "mode": "details"
+        },
+        "layers": [
+          {
+            "name": "YouBike 站點",
+            "type": "markers",
+            "location": {
+              "mode": "coords",
+              "latitude": "latitude",
+              "longitude": "longitude"
+            },
+            "config": {
+              "showLegend": false,
+              "style": {
+                "color": {
+                  "fixed": "#45c9cf"
+                },
+                "opacity": 0.8,
+                "size": {
+                  "fixed": 4
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "各區站點數",
+      "gridPos": {
+        "x": 16,
+        "y": 4,
+        "w": 8,
+        "h": 14
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT district AS \"行政區\", count(*) AS \"站點數\"\nFROM current_stations\nGROUP BY district\nORDER BY count(*) DESC, district"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "行政區"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "站點數"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 85
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "站點明細",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 13
+      },
+      "description": "來源時間為市府回報的站點資料時間。停用狀態依來源欄位顯示。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT station_name AS \"站點\",\n       district AS \"行政區\",\n       available_bikes AS \"可借車數\",\n       available_docks AS \"可還空位\",\n       to_char(source_at AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS') AS \"來源時間\",\n       CASE WHEN is_active THEN '營運中' ELSE '停用' END AS \"來源營運狀態\" \nFROM current_stations\nORDER BY district, station_id"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "行政區"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "可借車數"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "可還空位"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "來源時間"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 205
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "來源營運狀態"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 145
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      }
+    },
+    {
+      "id": 8,
+      "type": "text",
+      "title": "資料來源",
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 3
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "[臺中市政府交通局 YouBike 站點與即時車位資料](https://data.gov.tw/dataset/136781) · 政府資料開放授權條款第 1 版。時間皆為臺灣時間。"
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: 臺中 YouBike
+    uid: youbike-postgres
+    type: postgres
+    access: proxy
+    url: db:5432
+    user: youbike_reader
+    isDefault: true
+    editable: false
+    jsonData:
+      database: youbike
+      sslmode: disable
+      postgresVersion: 1800
+    secureJsonData:
+      password: $YOUBIKE_READER_PASSWORD

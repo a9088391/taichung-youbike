@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+cd "$(dirname "$0")/.."
+
+if [ ! -e .env ]; then
+    admin_password=$(openssl rand -hex 24)
+    collector_password=$(openssl rand -hex 24)
+    reader_password=$(openssl rand -hex 24)
+    grafana_password=$(openssl rand -hex 24)
+    (
+        umask 077
+        set -C
+        printf '%s\n' \
+            "YOUBIKE_ADMIN_PASSWORD=$admin_password" \
+            "YOUBIKE_COLLECTOR_PASSWORD=$collector_password" \
+            "YOUBIKE_READER_PASSWORD=$reader_password" \
+            "YOUBIKE_GRAFANA_ADMIN_PASSWORD=$grafana_password" > .env
+    )
+fi
+
+exec docker compose "$@"
