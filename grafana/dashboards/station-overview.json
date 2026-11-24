@@ -524,5 +524,13 @@
         "content": "[臺中市政府交通局 YouBike 站點與即時車位資料](https://data.gov.tw/dataset/136781) · 政府資料開放授權條款第 1 版。時間皆為臺灣時間。"
       }
     }
+  ],
+  "links": [
+    {
+      "title": "早晚尖峰與單站歷史",
+      "url": "/d/taichung-youbike-peaks/taichung-youbike",
+      "type": "link",
+      "targetBlank": false
+    }
   ]
 }

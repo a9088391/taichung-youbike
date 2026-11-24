@@ -17,6 +17,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/10-youbike.sql:ro
+      - ./postgres/peak-history.sql:/docker-entrypoint-initdb.d/20-peak-history.sql:ro
 
   collector:
     build: .

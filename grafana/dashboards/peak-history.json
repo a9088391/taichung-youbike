@@ -1,0 +1,644 @@
+{
+  "id": null,
+  "uid": "taichung-youbike-peaks",
+  "title": "臺中 YouBike 早晚尖峰與單站歷史",
+  "tags": [
+    "YouBike",
+    "臺中"
+  ],
+  "timezone": "Asia/Taipei",
+  "schemaVersion": 42,
+  "version": 1,
+  "editable": false,
+  "refresh": "1m",
+  "time": {
+    "from": "now-14d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "templating": {
+    "list": [
+      {
+        "name": "district",
+        "label": "行政區",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "youbike-postgres"
+        },
+        "query": "SELECT DISTINCT district AS __text, district AS __value FROM station_history ORDER BY 1",
+        "definition": "SELECT DISTINCT district AS __text, district AS __value FROM station_history ORDER BY 1",
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": true,
+        "options": [],
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "name": "station",
+        "label": "站點",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "youbike-postgres"
+        },
+        "query": "SELECT station_name || ' [' || station_id || ']' AS __text, station_id AS __value\nFROM (SELECT DISTINCT ON (station_id) station_id, station_name, source_at\n      FROM station_history WHERE district = ANY(ARRAY[${district:sqlstring}]::text[])\n      ORDER BY station_id, source_at DESC) AS stations\nORDER BY 1, 2",
+        "definition": "SELECT station_name || ' [' || station_id || ']' AS __text, station_id AS __value\nFROM (SELECT DISTINCT ON (station_id) station_id, station_name, source_at\n      FROM station_history WHERE district = ANY(ARRAY[${district:sqlstring}]::text[])\n      ORDER BY station_id, source_at DESC) AS stations\nORDER BY 1, 2",
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": true,
+        "options": [],
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [
+    {
+      "title": "站點總覽",
+      "url": "/d/taichung-youbike/taichung-youbike",
+      "type": "link",
+      "targetBlank": false
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "早尖峰資料狀態",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": true,
+          "fields": "/^資料狀態$/",
+          "limit": 1
+        },
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "none",
+        "text": {
+          "valueSize": 22
+        }
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT CASE WHEN count(*) = 0 THEN '無資料'\n            ELSE '有效樣本 ' || count(*)::text || ' 筆（各站達24筆才排行）' END AS \"資料狀態\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND peak = '早尖峰'"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "晚尖峰資料狀態",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": true,
+          "fields": "/^資料狀態$/",
+          "limit": 1
+        },
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "none",
+        "text": {
+          "valueSize": 22
+        }
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT CASE WHEN count(*) = 0 THEN '無資料'\n            ELSE '有效樣本 ' || count(*)::text || ' 筆（各站達24筆才排行）' END AS \"資料狀態\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND peak = '晚尖峰'"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "早尖峰・缺車排行",
+      "gridPos": {
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*比例.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      },
+      "description": "所選日期內各站分別累計。僅有效樣本至少24筆才列入；缺車與缺位各以同一組有效觀測為分母，比例可同時發生。沒有合格站點時不顯示排行，請看上方資料狀態與下方明細。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT station_id AS \"站號\", (array_agg(station_name ORDER BY source_at DESC))[1] AS \"站點\",\n       (array_agg(district ORDER BY source_at DESC))[1] AS \"行政區\",\n       count(*) AS \"有效樣本數\",\n       round(100.0 * count(*) FILTER (WHERE available_bikes = 0) / count(*), 2) AS \"缺車比例\",\n       round(100.0 * count(*) FILTER (WHERE available_docks = 0) / count(*), 2) AS \"缺位比例\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND peak = '早尖峰'\nGROUP BY station_id\nHAVING count(*) >= 24\nORDER BY \"缺車比例\" DESC, station_id"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "早尖峰・缺位排行",
+      "gridPos": {
+        "x": 12,
+        "y": 3,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*比例.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      },
+      "description": "所選日期內各站分別累計。僅有效樣本至少24筆才列入；缺車與缺位各以同一組有效觀測為分母，比例可同時發生。沒有合格站點時不顯示排行，請看上方資料狀態與下方明細。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT station_id AS \"站號\", (array_agg(station_name ORDER BY source_at DESC))[1] AS \"站點\",\n       (array_agg(district ORDER BY source_at DESC))[1] AS \"行政區\",\n       count(*) AS \"有效樣本數\",\n       round(100.0 * count(*) FILTER (WHERE available_bikes = 0) / count(*), 2) AS \"缺車比例\",\n       round(100.0 * count(*) FILTER (WHERE available_docks = 0) / count(*), 2) AS \"缺位比例\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND peak = '早尖峰'\nGROUP BY station_id\nHAVING count(*) >= 24\nORDER BY \"缺位比例\" DESC, station_id"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "晚尖峰・缺車排行",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*比例.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      },
+      "description": "所選日期內各站分別累計。僅有效樣本至少24筆才列入；缺車與缺位各以同一組有效觀測為分母，比例可同時發生。沒有合格站點時不顯示排行，請看上方資料狀態與下方明細。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT station_id AS \"站號\", (array_agg(station_name ORDER BY source_at DESC))[1] AS \"站點\",\n       (array_agg(district ORDER BY source_at DESC))[1] AS \"行政區\",\n       count(*) AS \"有效樣本數\",\n       round(100.0 * count(*) FILTER (WHERE available_bikes = 0) / count(*), 2) AS \"缺車比例\",\n       round(100.0 * count(*) FILTER (WHERE available_docks = 0) / count(*), 2) AS \"缺位比例\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND peak = '晚尖峰'\nGROUP BY station_id\nHAVING count(*) >= 24\nORDER BY \"缺車比例\" DESC, station_id"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "晚尖峰・缺位排行",
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*比例.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      },
+      "description": "所選日期內各站分別累計。僅有效樣本至少24筆才列入；缺車與缺位各以同一組有效觀測為分母，比例可同時發生。沒有合格站點時不顯示排行，請看上方資料狀態與下方明細。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT station_id AS \"站號\", (array_agg(station_name ORDER BY source_at DESC))[1] AS \"站點\",\n       (array_agg(district ORDER BY source_at DESC))[1] AS \"行政區\",\n       count(*) AS \"有效樣本數\",\n       round(100.0 * count(*) FILTER (WHERE available_bikes = 0) / count(*), 2) AS \"缺車比例\",\n       round(100.0 * count(*) FILTER (WHERE available_docks = 0) / count(*), 2) AS \"缺位比例\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND peak = '晚尖峰'\nGROUP BY station_id\nHAVING count(*) >= 24\nORDER BY \"缺位比例\" DESC, station_id"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "尖峰樣本與比例明細（含未達24筆）",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*比例.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT station_id AS \"站號\", (array_agg(station_name ORDER BY source_at DESC))[1] AS \"站點\",\n       (array_agg(district ORDER BY source_at DESC))[1] AS \"行政區\",\n       peak AS \"尖峰\", count(*) AS \"有效樣本數\",\n       round(100.0 * count(*) FILTER (WHERE available_bikes = 0) / count(*), 2) AS \"缺車比例\",\n       round(100.0 * count(*) FILTER (WHERE available_docks = 0) / count(*), 2) AS \"缺位比例\",\n       CASE WHEN count(*) >= 24 THEN '達排行門檻' ELSE '未達24筆，不列排行' END AS \"排行資格\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND peak IS NOT NULL\nGROUP BY station_id, peak\nORDER BY station_id, peak"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "單站歷史資料狀態",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 3
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": true,
+          "fields": "/^歷史狀態$/",
+          "limit": 1
+        },
+        "textMode": "value",
+        "graphMode": "none",
+        "colorMode": "none",
+        "text": {
+          "valueSize": 22
+        }
+      },
+      "description": "上方站點選單選擇一個站號；單站歷史涵蓋所選日期的全部時段，觀測點只顯示有效觀測，明細保留不合格原因。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT CASE\n    WHEN (SELECT count(DISTINCT station_id) FROM station_history WHERE district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])) <> 1 THEN '請選擇單一站點查看歷史'\n    WHEN count(*) = 0 THEN '無資料'\n    WHEN count(*) FILTER (WHERE valid_sample) = 0 THEN '無資料（觀測皆不合格，見歷史明細）'\n    ELSE '單站歷史：有效 ' || count(*) FILTER (WHERE valid_sample)::text || ' / 全部 ' || count(*)::text || ' 筆'\nEND AS \"歷史狀態\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "單站可借車數與可還空位",
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料",
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "drawStyle": "points",
+            "showPoints": "always"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "description": "時間為臺灣時間。只以觀測點顯示實際有效資料，不連線、不補零、不推算缺報或不合格時段。資料尚未採集或全數不合格時，請看上方「無資料」提示。",
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT source_at AS time, available_bikes AS \"可借車數\", available_docks AS \"可還空位\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND valid_sample AND (SELECT count(DISTINCT station_id) FROM station_history WHERE district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])) = 1\nORDER BY source_at"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "單站歷史明細（含不合格觀測）",
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*比例.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "enablePagination": true
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "youbike-postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "postgres",
+            "uid": "youbike-postgres"
+          },
+          "rawQuery": true,
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT to_char(source_at AT TIME ZONE 'Asia/Taipei', 'YYYY-MM-DD HH24:MI:SS') AS \"來源時間\",\n       station_id AS \"站號\", station_name AS \"站點\", district AS \"行政區\",\n       available_bikes AS \"可借車數\", available_docks AS \"可還空位\",\n       sample_status AS \"觀測狀態\", coalesce(peak, '非平日尖峰') AS \"時段\"\nFROM station_history\nWHERE $__timeFilter(source_at)\n  AND district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])\n  AND (SELECT count(DISTINCT station_id) FROM station_history WHERE district = ANY(ARRAY[${district:sqlstring}]::text[])\n  AND station_id = ANY(ARRAY[${station:sqlstring}]::text[])) = 1\nORDER BY source_at"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "text",
+      "title": "計算方式與資料來源",
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 24,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "無資料"
+        },
+        "overrides": []
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "臺灣時間週一至週五：早尖峰 **07:00 ≤ 來源時間 < 09:00**；晚尖峰 **17:00 ≤ 來源時間 < 19:00**。日期範圍使用上方時間選擇器，各尖峰分別累計。\n\n有效觀測須營運中，且首次採集時來源年齡介於0至30分鐘（含邊界）；停用、過期、來源時間在未來或缺報不計入。相同站號與來源時間重抓只算一筆。有效樣本至少24筆才排行；明細可查不足24筆。未採集期間無資料，不補零。\n\n[臺中市政府交通局 YouBike 資料](https://data.gov.tw/dataset/136781) · 政府資料開放授權條款第1版。"
+      }
+    }
+  ]
+}
