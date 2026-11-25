@@ -33,7 +33,7 @@
 ## 如何查看
 
 - **免登入展示：**[全市固定快照（Grafana Snapshot）](https://snapshots.raintank.io/dashboard/snapshot/c99414bd980a67f72ad3f0a159766685)。
-- **本機完整功能：**啟動後可查看[站點總覽](http://127.0.0.1:5088/d/taichung-youbike/taichung-youbike)、[早晚尖峰與單站歷史](http://127.0.0.1:5088/d/taichung-youbike-peaks/taichung-youbike)及[官方月報](http://127.0.0.1:5088/d/taichung-youbike-monthly/taichung-youbike)。本機版包含篩選與歷史資料；公開快照是固定日期的總覽。
+- **本機完整功能：** 啟動後可查看[站點總覽](http://127.0.0.1:5088/d/taichung-youbike/taichung-youbike)、[早晚尖峰與單站歷史](http://127.0.0.1:5088/d/taichung-youbike-peaks/taichung-youbike)及[官方月報](http://127.0.0.1:5088/d/taichung-youbike-monthly/taichung-youbike)。本機版包含篩選與歷史資料；公開快照是固定日期的總覽。
 
 ## 本機啟動
 
