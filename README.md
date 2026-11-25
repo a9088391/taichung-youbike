@@ -1,6 +1,39 @@
-# 臺中 YouBike 站點供需儀表板
+# 臺中 YouBike 全市站況與租借趨勢儀表板
 
-在本機 Grafana 查看臺中市政府提供的 YouBike 站況。總覽顯示來源涵蓋的站點和行政區、站點地圖、可借車數、可還空位及來源時間。
+以臺中市政府 YouBike 站點資料呈現全市最新站況、站點歷史與官方月報，並提供一份免登入的固定全市展示快照。
+
+![第04張v2固定全市展示：站點數、29區與站點地圖](docs/assets/public-snapshot-preview.jpg)
+
+**[開啟免登入的全市展示快照（v2）](https://snapshots.raintank.io/dashboard/snapshot/c99414bd980a67f72ad3f0a159766685)**。此固定快照建立於2026-11-25 01:21:05，資料擷取時間為2026-11-24 19:36:02（臺灣時間），包含1,851站與29區；它不會隨本機採集更新。
+
+## 專案功能
+
+- 全市站點地圖、行政區站數、可借車／可還空位與來源時間。
+- 臺灣時間早晚尖峰排行、行政區與站點篩選，以及單站歷史觀測。
+- 官方全市月度租借趨勢，保留缺月資訊並標示來源與涵蓋期間。
+- Grafana 原生免登入固定快照，供直接瀏覽全市總覽。
+
+## 使用技術
+
+| 項目 | 技術 |
+| --- | --- |
+| 儀表板與圖表 | Grafana 13.3 |
+| 採集程式 | Python 3.13、psycopg 3 |
+| 資料庫 | PostgreSQL 18 |
+| 本機執行 | Docker Compose |
+| 驗證 | Python `unittest`、隔離 PostgreSQL 整合驗證與 Grafana 畫面檢查 |
+
+## 實作內容
+
+- 約每十分鐘採集站點資料；同站與同來源時間只保留一筆，採集失敗時保留最後成功資料並記錄狀態。
+- 以有效樣本計算尖峰缺車／缺位比例，分開處理兩種狀況，並以每站每尖峰至少24筆作為排行門檻。
+- 匯入官方月報快照，保留原始來源與涵蓋月份，遇到缺月時在趨勢圖中斷線呈現。
+- 將核准欄位整理成 Grafana 原生 Snapshot 資料，檢查快照固定性與輸出內容。
+
+## 如何查看
+
+- **免登入展示：**[全市固定快照（Grafana Snapshot）](https://snapshots.raintank.io/dashboard/snapshot/c99414bd980a67f72ad3f0a159766685)。
+- **本機完整功能：**啟動後可查看[站點總覽](http://127.0.0.1:5088/d/taichung-youbike/taichung-youbike)、[早晚尖峰與單站歷史](http://127.0.0.1:5088/d/taichung-youbike-peaks/taichung-youbike)及[官方月報](http://127.0.0.1:5088/d/taichung-youbike-monthly/taichung-youbike)。本機版包含篩選與歷史資料；公開快照是固定日期的總覽。
 
 ## 本機啟動
 
@@ -10,14 +43,32 @@
 ./bin/local up -d --build --wait
 ```
 
-開啟 [本機 Grafana 總覽](http://127.0.0.1:5088/d/taichung-youbike/taichung-youbike)。採集程式在啟動時執行一次，之後約每十分鐘擷取。第一次成功後儀表板會顯示站點；畫面每分鐘更新，也可手動重新整理。
+啟動完成後，開啟[本機 Grafana 站點總覽](http://127.0.0.1:5088/d/taichung-youbike/taichung-youbike)。採集程式啟動時會先採集一次，之後約每十分鐘擷取；Grafana 畫面每分鐘更新。首次使用會建立本機 `.env` 憑證與 PostgreSQL volume。請保留兩者；既有 volume 若尚未套用新增資料結構，請依下方進階操作中的升級指引處理。
 
-`bin/local` 首次執行會產生本機 `.env` 憑證。保留此檔案及 PostgreSQL volume，以便停止後繼續使用原資料。Grafana 只綁定 `127.0.0.1`，以唯讀 Viewer 開啟。資料庫採集與檢視使用不同角色，資料庫連接埠只在 Compose 網路內使用。若 5088 已被占用，可在啟動時以 `YOUBIKE_GRAFANA_PORT` 指定本機連接埠。
+### 停止服務
+
+```sh
+./bin/local stop
+```
+
+此命令會停止 Compose 服務並保留 `.env` 與資料庫 volume。
+
+### 再次啟動
+
+```sh
+./bin/local up -d --wait
+```
+
+### 查看採集紀錄
 
 ```sh
 ./bin/local logs --tail 40 collector
-./bin/local stop
 ```
+
+Grafana 預設只綁定本機 `127.0.0.1:5088`，以唯讀 Viewer 開啟；PostgreSQL 不公開主機連接埠。若5088已被占用，可設定 `YOUBIKE_GRAFANA_PORT` 指定其他本機連接埠。
+
+<details>
+<summary>進階操作、升級與驗證</summary>
 
 ## 來源與更新狀態
 
@@ -176,3 +227,97 @@ docker compose --env-file .env -p "$ticket03_project" run --rm --no-deps -T \
 不加 `--admin` 時只跑 reader 面板SQL、月份／缺月／官方抽查值、來源期間與reader／collector寫入拒絕；加上該參數才以明確admin actor執行實際seed兩次、同腳本失敗副本回滾、月初／非負約束與站點／採集狀態不變檢查。此測試不輸出憑證，也不新增站點資料。
 
 Grafana實際驗收仍遵循上方完整原始DOM／AX及截圖程序，改用5093並保存在 `../.scratch/taichung-youbike/review/03/`：首次0站點歷史可見四張KPI與18個官方月份圓點、2026-09數值與hover精確值；兩個缺月前後斷線，明細仍保留缺月與未發布標示；各自來源／涵蓋期間，以及月報前往原有兩頁的連結與其無資料行為。亦以既有最近6小時URL日期範圍重新開啟，確認主圖仍呈現整份月報。SQL／metadata通過不能代替畫面驗收。
+
+## 免登入的全市展示快照
+
+公開版是 Grafana 原生 Snapshot，只呈現固定全市總覽：站點與行政區數、地圖、各區站數、站點明細、快照建立時間、資料擷取時間、各站來源時間及來源授權。它不連回資料庫，也不隨本機採集更新；尖峰、歷史篩選與官方月報仍由本機版提供。
+
+目前[公開快照連結](https://snapshots.raintank.io/dashboard/snapshot/c99414bd980a67f72ad3f0a159766685)為v2；[個人網站作品區](https://a9088391.github.io/#projects)的「開啟展示」已更新到此連結，並已從未登入的公開網站實測抵達。v2包含1,851站與29區，建立時間2026-11-25 01:21:05、資料擷取時間2026-11-24 19:36:02（臺灣時間）。`expires=0`（Never）服務回傳的 `meta_expires` 是 `2076-11-12T05:21:06Z`；這是服務回傳的UTC期限，不保證第三方服務永久可用。v1快照仍保留歷史連結，不覆寫或刪除。
+
+v1重新檢查時匿名API仍回傳相同資料，但瀏覽器只顯示Grafana外殼，沒有面板；根因未確認。v2公開畫面已通過匿名首次載入、地圖縮放與tooltip、行政區及站點表末頁、來源資訊和手機視窗檢查；console仍記錄 `Error fetching Prometheus write target` 與 `Object`，根因未確認，不宣稱無console錯誤。網站科技藍改版已於2026-11-25發布（網站提交 `3d94795d671f266c3b96c86926ed08f311680ca2`），七項作品都有可展開的實際截圖；取得專案的人可查看展示，或依「本機啟動」操作完整功能。
+
+本票隔離環境運行時，也可[開啟v2本機固定快照預覽](http://127.0.0.1:5095/dashboard/snapshot/4SpYO31VXqAsMRxhAab9thhiDzs224sr)；它需本機5095服務運行，容器重建後可能失效，這不是公開連結。
+
+`public_snapshot.py` 只有 `prepare`／`check`，不發送 HTTP、不發布。`prepare` 限用 `youbike_reader`，在同一唯讀、可重複讀取交易內擷取成功狀態與全市資料；要求29區完整且有資料，將公開欄位建成Grafana原生 `snapshotData` frames。v1與v2使用版本化儀表板模板；`check` 只接受 `version` 恰為整數1或2的支援模板，並依固定面板白名單重建比對，拒絕空資料、缺區、重複站號、不合法欄位、錯誤時間、不同步面板、任意查詢／資料源／隱藏metadata／連結／刷新設定。輸出以排他建立保護既有檔，不會覆寫舊候選。一般dashboard JSON export沒有這些資料，不能代替含資料快照。
+
+### 第04張隔離準備與驗證
+
+使用本票唯一專用 project `taichung-youbike-ticket04-check`、Grafana `127.0.0.1:5095` 與同project的 `pgdata`。不重用5088／5092／5093／5094，不啟動週期採集器、不刪volume。先確認私有 `.env` 存在；僅缺少時才執行 `./bin/local config --quiet`。
+
+```sh
+ticket04_project=taichung-youbike-ticket04-check
+set -a
+. ./.env
+set +a
+export YOUBIKE_GRAFANA_PORT=5095
+docker compose --env-file .env -p "$ticket04_project" up -d --wait db grafana
+docker compose --env-file .env -p "$ticket04_project" ps
+docker compose --env-file .env -p "$ticket04_project" port grafana 3000
+docker volume ls --filter "label=com.docker.compose.project=$ticket04_project"
+docker compose --env-file .env -p "$ticket04_project" exec -T db \
+  psql -X -v ON_ERROR_STOP=1 -U youbike_admin -d youbike \
+  -c "SELECT current_database(),current_user,session_user,(SELECT count(*) FROM station_observations),shobj_description(oid,'pg_database') FROM pg_database WHERE datname=current_database();"
+```
+
+第一個寫入前，核對實際project／service標籤、loopback5095綁定、同project volume、來源版本及測試image；DB須為 `youbike`、current/session actor皆 `youbike_admin`、空站點且尚無標記。只有以上都符合，才設定標記；若非空或已有其他標記就停止，不能繞guard或清資料。
+
+```sh
+docker compose --env-file .env -p "$ticket04_project" exec -T db \
+  psql -X -v ON_ERROR_STOP=1 -U youbike_admin -d youbike \
+  -c "DO \$\$ BEGIN IF current_database() <> 'youbike' OR current_user <> 'youbike_admin' OR session_user <> 'youbike_admin' OR (SELECT count(*) FROM station_observations) <> 0 OR shobj_description((SELECT oid FROM pg_database WHERE datname=current_database()), 'pg_database') IS NOT NULL THEN RAISE EXCEPTION 'ticket04 target guard rejected'; END IF; END \$\$; COMMENT ON DATABASE youbike IS 'ticket04-check disposable verification';"
+docker compose --env-file .env -p "$ticket04_project" build collector
+docker compose --env-file .env -p "$ticket04_project" run --rm --no-deps -T \
+  -e TICKET04_DISPOSABLE=ticket04-check \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/public_snapshot.py:/app/public_snapshot.py:ro" \
+  collector python -B -c 'import sys; sys.path.insert(0,"tests"); from integration_public_snapshot import guard; import collector,psycopg; guard(); c=psycopg.connect(connect_timeout=5); assert c.execute("SELECT count(*) FROM station_observations").fetchone()[0] == 0; c.close(); sys.exit(collector.main(["--once"]))'
+```
+
+上述一次採集會連向市府官方資料；既有collector寫入整批資料，沒有週期排程。後續重跑驗證直接從下列步驟繼續，不重設標記、不重跑只接受空庫的初次採集。
+
+```sh
+mkdir -p ../.scratch/taichung-youbike/review/04
+docker compose --env-file .env -p "$ticket04_project" run --rm --no-deps -T \
+  -e PGUSER=youbike_reader -e PGPASSWORD="$YOUBIKE_READER_PASSWORD" \
+  -v "$PWD/public_snapshot.py:/app/public_snapshot.py:ro" \
+  -v "$PWD/../.scratch/taichung-youbike/review/04:/evidence" \
+  collector python -B public_snapshot.py prepare /evidence/public-snapshot.json
+python3 -B public_snapshot.py check ../.scratch/taichung-youbike/review/04/public-snapshot.json
+docker compose --env-file .env -p "$ticket04_project" run --rm --no-deps -T \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/grafana:/app/grafana:ro" \
+  -v "$PWD/postgres:/app/postgres:ro" -v "$PWD/public_snapshot.py:/app/public_snapshot.py:ro" \
+  collector python -B -m unittest discover -s tests -v
+docker compose --env-file .env -p "$ticket04_project" run --rm --no-deps -T \
+  -e TICKET04_DISPOSABLE=ticket04-check -e YOUBIKE_READER_PASSWORD \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/public_snapshot.py:/app/public_snapshot.py:ro" \
+  collector python -B tests/integration_public_snapshot.py
+```
+
+`prepare` 不覆寫既有候選；保留原檔／雜湊，下一份另取檔名。唯讀整合檢查以真實reader逐站逐欄比對native frames、站數與區數。建立本地原生快照的API步驟、發布前審查及撤銷限制見[快照操作文件](docs/public-snapshot.md)。本票本地API只准 `external=false`；不能把外部上傳當相容性探測。
+
+### 第04張 Grafana 畫面與固定性證據
+
+仍遵循上方「Grafana 畫面驗收與證據」的完整原始AX／DOM／JPG程序，改用5095本地 Snapshot URL，保存至 `../.scratch/taichung-youbike/review/04/`。記錄實際候選檔SHA256、程式／測試來源雜湊、Grafana版本、project、URL、匿名角色及資料時間。
+
+先保存未登入首次載入：四張KPI、29區、全市地圖、固定資料提示與日期。實際縮放地圖、指向至少一站，核對站名、可借／可還、營運狀態與來源時間；翻閱站點明細與各區表格，確認來源／授權連結及固定日期，不出現月報／尖峰／篩選入口或即時更新誤解。保留完整狀態與必要JPG；SQL／API／metadata預檢不代替這些畫面檢查。
+
+首次證據保存後，以該本地快照的公開key執行一次新採集（只用key，不填deleteKey）：
+
+```sh
+docker compose --env-file .env -p "$ticket04_project" run --rm --no-deps -T \
+  -e TICKET04_DISPOSABLE=ticket04-check -e YOUBIKE_READER_PASSWORD \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/public_snapshot.py:/app/public_snapshot.py:ro" \
+  collector python -B tests/integration_public_snapshot.py \
+  --snapshot-key 4SpYO31VXqAsMRxhAab9thhiDzs224sr --recollect
+```
+
+整合程式在任何寫入前核對環境標記、DB名稱、current/session collector actor；走實際 `collector.main --once`，確認最後成功採集時間前進、同一本地快照匿名API回應逐位元不變且日期不變。2026-11-25的v2本機固定性檢查已通過：1,851站／29區重新採集後，同一5095快照API回應SHA256仍為 `a115dff97443207158b829ec3551869702664481b43343c49125d6b19754a800`，匿名頁面重新載入仍顯示相同站數、建立時間2026-11-25 01:21:05及資料擷取時間2026-11-24 19:36:02（臺灣時間）。原始畫面證據保存在本票驗收目錄。v1的三項公開驗收保留為歷史結果，不代表v2通過；v2的三項公開驗收均已通過：
+
+- **v2公開驗收通過：**未登入開啟官方服務URL，核對全市總覽、日期、來源及原生面板互動。
+- **v2公開驗收通過：**本機再次採集後，同一v2公開URL的匿名API回應及日期不變；重新載入畫面仍顯示原快照時間。
+- **v2網站入口驗收通過：**網站提交 `b13277a4d69367eeaff04d893aab06847d073ff9` 的Pages部署成功；從未登入的公開作品區另開新分頁可抵達同一v2快照，標題、站數、日期與來源正確，原作品頁保留。
+
+v2候選 `public-snapshot-v2-r2.json` 的SHA256為 `11765db86444494ffdf251926e03bd25c35bfcdd06b0efbf0a905706de7dfc2f`，已依核准雜湊單次發布；官方服務版本 `13.4.0-44540513276` 回覆HTTP 200。匿名公開API回應為413,980 bytes、SHA256 `7a45a53f549b378417357f542b63fb8a26c177da3abf42cb5689e82a9c2113bd`；其中核准候選的dashboard欄位一致，服務僅加入 `snapshot.originalUrl=""`。服務回傳 `meta_created=2026-11-25T05:21:06Z`、`meta_expires=2076-11-12T05:21:06Z`（UTC）。發布URL為[新版公開快照](https://snapshots.raintank.io/dashboard/snapshot/c99414bd980a67f72ad3f0a159766685)。未來其他候選仍須重新審查並另取核准；v1 URL與內容保留不變。
+
+本次v2網站入口的Pages run `45555845226` 成功，正式網站桌面與375px受影響卡片及另開分頁抵達已驗證；原始AX／DOM／JPG與提交身分保存在本票 `restyle-20261125/publication-v2/`。YouBike repo本輪尚未獲准commit／push，以上文件更新仍保留於本機。
+
+</details>
